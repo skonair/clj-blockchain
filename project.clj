@@ -7,7 +7,8 @@
                  [ring/ring-defaults "0.2.1"]
                  [ring/ring-json "0.4.0"]
                  [digest "1.4.8"]
-                 [org.clojure/data.json "0.2.6"]]
+                 [org.clojure/data.json "0.2.6"]
+                 [clj-http "3.8.0"]]
   :plugins [[lein-ring "0.9.7"]]
   :ring {:handler clj-blockchain.handler/app}
   :profiles

@@ -8,3 +8,8 @@
 (deftest test-app
   (testing "genesis-block"
       (is (not (nil? (new-block bc 100 1))))))
+
+(deftest test-app
+  (testing "valid-chain?"
+      (is (valid-chain? {} (new-block bc 100 1)))))
+

@@ -5,10 +5,34 @@
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.middleware.json :as ring-json]
             [clojure.data.json :as json]
+            [clj-http.client :as client]
             [clj-blockchain.blockchain :as blockchain]))
 
 ; the genesis-block
 (def bc (atom (blockchain/new-block {:chain [] :current-transactions []} 100 1)))
+
+(def node-vec [ "http://localhost:3000/chain" ])
+
+(defn register-nodes [nodes]
+  (reset! node-vec (conj node-vec nodes)))
+
+(defn resolve-nodes []
+  (let [rsps (map client/get node-vec)]
+    (loop [[r1 & rst] rsps res @bc]
+      (println "resolve node r1 " r1 " and rest " rst)
+        (if (nil? r1)
+          (do 
+            (reset! bc res)
+            (println "Reset called!")
+            )
+      (let [body (json/read-str (:body r1)) better? (and (blockchain/valid-chain? res body) (< (count res) (count body)))]
+          (recur rst (if better? body res))
+        )
+      )
+    )
+  )
+)
+  
 
 (defn mine [bc]
   (let [last-block (last (@bc :chain))
@@ -22,11 +46,11 @@
 
     (reset! bc new-block)
     (json/write-str {
-                     :message "New Block Forged"
-                     :index (last-entry :index)
-                     :transactions (last-entry :transactions)
-                     :proof proof
                      :previous-hash prev-hash
+                     :index (last-entry :index)
+                     :message "New Block Forged"
+                     :proof proof
+                     :transactions (last-entry :transactions)
                      })))
 
 (defn full-chain [bc]
@@ -46,6 +70,8 @@
   (GET "/chain" [] (full-chain bc))
   (GET "/transactions/open" [] (open-transaction bc))
   (POST "/transactions/new" {params :params} (new-transaction bc params))
+  (POST "/nodes/register" {nodes :nodes} (register-nodes nodes))
+  (GET "/nodes/resolve" [] (resolve-nodes))
   (route/not-found "Not Found"))
 
 (def app

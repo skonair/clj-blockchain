@@ -3,7 +3,6 @@
            [digest :as digest]
            [clojure.data.json :as json]))
 
-
 (defn hash-block [block]
   (-> (into (sorted-map) block)
       (json/write-str)
@@ -17,19 +16,21 @@
         ]
     (assoc bc :chain
               (conj (bc :chain)
-                    {:index index
+                    {
+                     :index index
+                     :previous-hash previous-hash
+                     :proof proof
                      :timestamp timestamp
                      :transactions transactions
-                     :proof proof
-                     :previous-hash previous-hash})
-              :current-transactions [])))
+                     :current-transactions []}))))
+
 
 (defn new-transaction [bc sender recipient amount]
   (assoc bc :current-transactions
             (conj (bc :current-transactions)
-                  {:sender sender
+                  {:amount amount
                    :recipient recipient
-                   :amount amount})))
+                   :sender sender})))
 
 (defn valid-proof? [x y]
   (-> (str x y)
@@ -39,5 +40,9 @@
 (defn proof-of-work [last-proof]
   (first (filter #(valid-proof? last-proof %) (iterate inc 0))))
 
+(defn valid-chain? [bc bc-other]
+  (and
+    (<= (count bc) (count bc-other))
+    (= bc (into {} (take (count bc) bc-other)))))
 
 
